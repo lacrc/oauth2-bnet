@@ -5,22 +5,27 @@ namespace Depotwarehouse\OAuth2\Client\Provider;
 use Depotwarehouse\OAuth2\Client\Entity\WowUser;
 use League\OAuth2\Client\Token\AccessToken;
 
-class WowProvider extends BattleNet
-{
+class WowProvider extends BattleNet {
 
+    /**
+     * @var string
+     */
     protected $game = "wow";
 
-    public function getResourceOwnerDetailsUrl(AccessToken $token)
-    {
-        return "https://{$this->region}.api.battle.net/wow/user/characters?access_token={$token}";
+    protected function getBaseEndpoint() {
+        switch ($this->region) {
+            case 'cn':
+                return "https://gateway.battlenet.com.cn";
+            default:
+                return "https://{$this->region}.api.blizzard.com";
+        }
     }
 
-    protected function createResourceOwner(array $response, AccessToken $token)
-    {
-        $response = (array)($response['characters']);
+    public function getCharactersArray(AccessToken $token) {
+        $url = $this->getBaseEndpoint()."/wow/user/characters";
 
-        $user = new WowUser($response, $this->region);
+        $request = $this->getAuthenticatedRequest(self::METHOD_GET, $url, $token);
 
-        return $user;
+        return $this->getResponse($request);
     }
 }
