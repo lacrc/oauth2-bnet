@@ -91,3 +91,11 @@ and key files in `test/ssl`.
 
 Next edit `test/config.php` to fill in the values for your own client key from https://dev.battle.net and you should be able
 to run the test. The page should redirect you to log in, and then dump your user values to screen if successful.
+
+
+Configuration
+-------
+To publish the configuration file run the following command in your project's folder:
+```bash 
+php artisan vendor:publish --provider='Depotwarehouse\OAuth2\Client\FrameworkIntegration\Laravel\BattleNetOAuth2ServiceProvider'
+```

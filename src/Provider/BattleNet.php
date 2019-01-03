@@ -10,14 +10,17 @@ use League\OAuth2\Client\Provider\Exception\IdentityProviderException;
 use League\OAuth2\Client\Provider\ResourceOwnerInterface;
 use League\OAuth2\Client\Token\AccessToken;
 use Psr\Http\Message\ResponseInterface;
+use Cache;
 
+/**
+ * Class BattleNet
+ * League's OAuth2 Implementation for Battle.net API access
+ *
+ * https://develop.battle.net/documentation/guides
+ *
+ * @package Depotwarehouse\OAuth2\Client\Provider
+ */
 abstract class BattleNet extends AbstractProvider {
-
-    /**
-     * Battle.net OAuth2 Documentation:
-     * https://develop.battle.net/documentation/api-reference/oauth-api
-     *
-     */
 
     /** The game we wish to query. Defaults to SC2. Available options are:
      *  * sc2
@@ -39,21 +42,27 @@ abstract class BattleNet extends AbstractProvider {
      */
     protected $region = "us";
 
-    public function __construct(array $options = [ ], array $collaborators = [ ])
-    {
+    /**
+     * BattleNet constructor.
+     * @param array $options
+     * @param array $collaborators
+     */
+    public function __construct(array $options = [ ], array $collaborators = [ ]) {
         parent::__construct($options, $collaborators);
 
-        // We need to validate some data to make sure we haven't constructed in an illegal state.
+        /* We need to validate some data to make sure we haven't constructed in an illegal state. */
         if (!in_array($this->game, [ "sc2", "wow"])) {
-            throw new \InvalidArgumentException("Game must be either sc2 or wow, given: {$this->game}");
+            throw new \InvalidArgumentException("Game must be either sc2 or wow , given: {$this->game}");
         }
 
+        /* validate available regions */
         $availableRegions = [ "us", "eu", "kr", "tw", "cn", "sea" ];
         if (!in_array($this->region, $availableRegions)) {
             $regionList = implode(", ", $availableRegions);
             throw new \InvalidArgumentException("Region must be one of: {$regionList}, given: {$this->region}");
         }
 
+        /* sea is only available in sc2 scopes */
         if ($this->region == "sea" && $this->game != "sc2") {
             throw new \InvalidArgumentException("sea region is only available for sc2");
         }
@@ -111,6 +120,19 @@ abstract class BattleNet extends AbstractProvider {
     }
 
     /**
+     * Base endpoint for Game Data APIs
+     * @return string
+     */
+    protected function getGameDataUrl() {
+        switch ($this->region) {
+            case 'cn':
+                return "https://gateway.battlenet.com.cn";
+            default:
+                return "https://{$this->region}.api.blizzard.com";
+        }
+    }
+
+    /**
      * Available scopes are wow.profile or sc2.profile
      * @return array
      */
@@ -161,5 +183,44 @@ abstract class BattleNet extends AbstractProvider {
             $data = (is_array($data) || empty($data)) ? $data : json_decode($data, true);
             throw new IdentityProviderException($data['error_description'], $response->getStatusCode(), $data);
         }
+    }
+
+    /*******************************/
+    /*   Client Credentials Flow   *
+    /*******************************/
+
+    /**
+     * Returns an access token for a Client ID + Client Secret combination
+     * https://develop.battle.net/documentation/guides/using-oauth/client-credentials-flow
+     *
+     * If cache is enabled in options, attempts to check if there's an unexpired key in the cache
+     *
+     * @param array $options
+     *
+     * @return \League\OAuth2\Client\Token\AccessTokenInterface
+     * @throws \League\OAuth2\Client\Provider\Exception\IdentityProviderException
+     */
+    public function getClientAccessToken(array $options = []) {
+        $cache = config('oauth2-bnet.cache.enabled');
+        if ($cache) {
+            $drive = config('oauth2-bnet.cache.drive');
+            $name = config('oauth2-bnet.cache.name');
+        }
+
+        if ($cache && Cache::store($drive)->has($this->game.$name)) {
+            $token = Cache::store($drive)->get($this->game.$name);
+            if ($token->hasExpired())
+                $token = null;
+        }
+
+        if (empty($token)) {
+            $token = $this->getAccessToken('client_credentials', $options);
+        }
+
+        if ($cache && !empty($token)) {
+            Cache::store($drive)->put($this->game.$name,  $token, $token->getExpires() - time());
+        }
+
+        return $token;
     }
 }

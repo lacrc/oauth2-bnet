@@ -21,36 +21,29 @@ class BattleNetOAuth2ServiceProvider extends ServiceProvider
     /**
      * Register the service provider.
      *
+     * The Client ID, Secret and Callback may be configured in the .env or in the published config file
+     * The .env configuration will take precedence over the config
      */
-    public function register()
-    {
-        $this->app->singleton(BattleNetUser::class, function(){
-           return new BattleNetUser([
-               'clientId' => \Config::get('oauth2-bnet.clientId'),
-               'clientSecret' => \Config::get('oauth2-bnet.clientSecret'),
-               'redirectUri' => \Config::get('oauth2-bnet.redirectUri'),
-           ]);
+    public function register() {
+        $clientId = env('BNET_CLIENT_ID', config('oauth2-bnet.clientId'));
+        $clientSecret = env('BNET_CLIENT_SECRET', config('oauth2-bnet.clientSecret'));
+        $redirectUri = env('BNET_CLIENT_REDIRECT_URI', config('oauth2-bnet.redirectUri'));
+
+        $this->app->singleton('Depotwarehouse\OAuth2\Client\Provider\SC2Provider', function()
+        use ($clientSecret, $clientId, $redirectUri) {
+            return new SC2Provider(compact('clientId', 'clientSecret', 'redirectUri'));
         });
 
-        $this->app->bind(SC2Provider::class, function() {
-            return new SC2Provider([
-                'clientId' => \Config::get('oauth2-bnet.clientId'),
-                'clientSecret' => \Config::get('oauth2-bnet.clientSecret'),
-                'redirectUri' => \Config::get('oauth2-bnet.redirectUri'),
-            ]);
-        });
-
-        $this->app->bind(WowProvider::class, function() {
-            return new WowProvider([
-                'clientId' => \Config::get('oauth2-bnet.clientId'),
-                'clientSecret' => \Config::get('oauth2-bnet.clientSecret'),
-                'redirectUri' => \Config::get('oauth2-bnet.redirectUri'),
-            ]);
+        $this->app->singleton('Depotwarehouse\OAuth2\Client\Provider\WowProvider', function()
+        use ($clientSecret, $clientId, $redirectUri) {
+            return new WowProvider(compact('clientId', 'clientSecret', 'redirectUri'));
         });
     }
 
-    public function boot()
-    {
+    /**
+     * Publishes the configuration file for editing
+     */
+    public function boot() {
         $this->publishes([
             __DIR__ . '/config/oauth2-bnet.php' => config_path('oauth2-bnet.php')
         ]);
