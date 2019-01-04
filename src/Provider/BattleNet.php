@@ -43,6 +43,11 @@ abstract class BattleNet extends AbstractProvider {
     protected $region = "us";
 
     /**
+     * The locale used to retrieve localized data.
+     */
+    protected $locale = 'en_US';
+
+    /**
      * BattleNet constructor.
      * @param array $options
      * @param array $collaborators
@@ -66,6 +71,22 @@ abstract class BattleNet extends AbstractProvider {
         if ($this->region == "sea" && $this->game != "sc2") {
             throw new \InvalidArgumentException("sea region is only available for sc2");
         }
+    }
+
+    /**
+     * Returns the current region of the provider
+     * @return string
+     */
+    public function getRegion() {
+        return $this->region;
+    }
+
+    /**
+     * Sets the region of the provider
+     * @param string $region
+     */
+    public function setRegion($region) {
+        $this->region = $region;
     }
 
     /**
@@ -155,8 +176,6 @@ abstract class BattleNet extends AbstractProvider {
     }
 
     /**
-     * Returns the authorization headers used by this provider.
-     *
      * For authenticated API requests Battle.net uses Bearer {Token} authorization header
      *
      * @param  AccessToken|string|null $token
@@ -168,6 +187,17 @@ abstract class BattleNet extends AbstractProvider {
 
         return [
             "Authorization" => "Bearer $token"
+        ];
+    }
+
+    /**
+     * Non-authorization headers added in all requests
+     *
+     * @return array
+     */
+    protected function getDefaultHeaders() {
+        return [
+            'locale' => $this->locale,
         ];
     }
 
@@ -191,8 +221,6 @@ abstract class BattleNet extends AbstractProvider {
 
     /**
      * Returns an access token for a Client ID + Client Secret combination
-     * https://develop.battle.net/documentation/guides/using-oauth/client-credentials-flow
-     *
      * If cache is enabled in options, attempts to check if there's an unexpired key in the cache
      *
      * @param array $options

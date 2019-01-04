@@ -25,9 +25,9 @@ class BattleNetOAuth2ServiceProvider extends ServiceProvider
      * The .env configuration will take precedence over the config
      */
     public function register() {
-        $clientId = env('BNET_CLIENT_ID', config('oauth2-bnet.clientId'));
-        $clientSecret = env('BNET_CLIENT_SECRET', config('oauth2-bnet.clientSecret'));
-        $redirectUri = env('BNET_CLIENT_REDIRECT_URI', config('oauth2-bnet.redirectUri'));
+        $clientId = config('oauth2-bnet.clientId');
+        $clientSecret = config('oauth2-bnet.clientSecret');
+        $redirectUri = config('oauth2-bnet.redirectUri');
 
         $this->app->singleton('Depotwarehouse\OAuth2\Client\Provider\SC2Provider', function()
         use ($clientSecret, $clientId, $redirectUri) {
