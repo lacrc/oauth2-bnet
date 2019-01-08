@@ -77,7 +77,7 @@ abstract class BattleNet extends AbstractProvider {
      * Returns the current region of the provider
      * @return string
      */
-    public function getRegion() {
+    public function getBattleNetRegion() {
         return $this->region;
     }
 
@@ -85,7 +85,7 @@ abstract class BattleNet extends AbstractProvider {
      * Sets the region of the provider
      * @param string $region
      */
-    public function setRegion($region) {
+    public function setBattleNetRegion($region) {
         $this->region = $region;
     }
 
@@ -211,7 +211,8 @@ abstract class BattleNet extends AbstractProvider {
     protected function checkResponse(ResponseInterface $response, $data) {
         if ($response->getStatusCode() != 200) {
             $data = (is_array($data) || empty($data)) ? $data : json_decode($data, true);
-            throw new IdentityProviderException($data['error_description'], $response->getStatusCode(), $data);
+            throw new IdentityProviderException($data['error_description'] ?? $response->getReasonPhrase(),
+                $response->getStatusCode(), $data);
         }
     }
 
